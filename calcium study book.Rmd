@@ -1,0 +1,81 @@
+---
+title: "calcium-data-book"
+output: html_notebook
+---
+
+# study of the data
+
+```{r}
+calcium=read.table("calcium.RData")
+```
+
+## let's fit a linear model to predict cal var
+```{r}
+fit<-lm(cal~time, data=calcium)
+plot(calcium)
+abline(fit$coefficients,lwd=2,col="red")
+```
+```{r}
+plot(calcium$time,fit$residuals)
+abline(h=0)
+```
+```{r}
+plot(calcium$cal,fit$residuals)
+abline(h=0)
+```
+## let's tweak the time var to make it fit to a linear model
+
+```{r}
+plot(calcium)
+abline(fit$coefficients,lwd=2,col="red")
+
+fit1<-lm(cal~time+I(time^2), data=calcium)
+yhat<-predict(fit1,newdata=data.frame(time=seq(0,15,0.1)))
+lines(seq(0,15,0.1),yhat,col="blue",lwd=2,lty=2)
+
+fit2<-lm(cal~time+I(time^2)+I(time^3), data=calcium)
+yhat<-predict(fit2,newdata=data.frame(time=seq(0,15,0.1)))
+lines(seq(0,15,0.1),yhat,col="green",lwd=2,lty=2)
+
+fit3<-lm(cal~time+I(sqrt(time)), data=calcium)
+yhat<-predict(fit3,newdata=data.frame(time=seq(0,15,0.1)))
+lines(seq(0,15,0.1),yhat,col="black",lwd=2,lty=2)
+
+
+
+fit4<-lm(cal~time+I(time^2)+I(sqrt(time)), data=calcium)
+yhat<-predict(fit4,newdata=data.frame(time=seq(0,15,0.1)))
+lines(seq(0,15,0.1),yhat,col="black",lwd=2,lty=1)
+```
+```{r}
+print(c("time",summary(fit)$r.squared,"time+time**2",summary(fit1)$r.squared,"time+time**2+time**3",summary(fit2)$r.squared,"time+time**1/2",
+        summary(fit3)$r.squared,"time+time**2+time**1/2",summary(fit4)$r.squared))
+```
+#Simuation
+
+Yi=β0+β1xi1+β2xi2+i,  i= 1,...,nwhere∼N(0,(0.5)2), withβ0= 0,β1= 0.1,β2= 1.
+
+##generate datasets
+```{r}
+n<-500 #number of vectors
+x1<-runif(n,0,1) #generation of xi
+x2<-runif(n,0,1)
+X<-cbind(rep(1,n),x1,x2)#generation des X
+beta<-c(0,0.1,1)#vecteur of parameters
+Ey<- X %*% beta #E(Y|X)
+sig<-0.5
+N<-1000 # number of datasets
+pval<-matrix(0,N,3)#initialization of pval
+```
+## Test hypothesis Hj0:βj=0
+
+```{r}
+for(i in 1:N){
+  y<-Ey+rnorm(n,0,sig) #generate y
+  fit<-lm(y ~ x1+x2)#generate yhat
+  pval[i,] <- summary(fit)$coefficients[,4]
+}
+
+colMeans(pval<=0.05)#we reject the hypothesis if Hj0=0 if pval<=0.05
+```
+we get the proportion of rejected hypothesis of beta=0 in Hj0
